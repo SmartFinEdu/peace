@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>День миру в Україні — Інтерактивна виховна година</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+  <!-- React & React DOM CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+
+  <!-- Babel Standalone -->
+  <script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+  <!-- Google Fonts: Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+    }
+    .animate-confetti {
+      animation: confetti-fall linear forwards;
+    }
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #certificate-print-area, #certificate-print-area * {
+        visibility: visible;
+      }
+      #certificate-print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        box-shadow: none !important;
+        border-width: 4px !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased selection:bg-sky-200">
+
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState } = React;
+
+    /* 8 True/False questions (8 points total) */
+    const trueFalseQuestions = [
+      { 
+        text: "Міжнародний день миру відзначають щороку 21 вересня згідно з рішенням ООН.", 
+        answer: true, 
+        explanation: "Це свято було започатковане ООН для заклику до припинення вогню та ненасильства в усьому світі." 
+      },
+      { 
+        text: "Символ 'Голуб миру' з оливковою гілкою створив видатний художник Пабло Пікассо.", 
+        answer: true, 
+        explanation: "У 1949 році Пабло Пікассо намалював білого голуба для Всесвітнього конгресу прибічників миру." 
+      },
+      { 
+        text: "В Україні День миру має лише формальне значення і не пов'язаний із реальним прагненням до безпеки.", 
+        answer: false, 
+        explanation: "Для України мир — це найвища цінність, свобода від агресії та збереження життів наших громадян." 
+      },
+      { 
+        text: "Японська дівчинка Садако Сасакі робила паперових журавликів як символ надії на одужання та мир.", 
+        answer: true, 
+        explanation: "Легенда свідчить, що тисяча складених журавликів дарує виконання заповітного бажання жити в мирі." 
+      },
+      { 
+        text: "Мир у суспільстві залежить тільки від політиків і не має стосунку до щоденної поведінки кожного з нас.", 
+        answer: false, 
+        explanation: "Мир починається з відсутності булінгу, вміння слухати, долати конфлікти та поважати думку інших." 
+      },
+      { 
+        text: "Дзвін Миру в штаб-квартирі ООН відлитий із монет, зібраних дітьми з різних країн світу.", 
+        answer: true, 
+        explanation: "Це символ дитячої надії та єдності людства у прагненні до спокійного майбутнього." 
+      },
+      { 
+        text: "Прагнення до миру означає повну капітуляцію та відмову від захисту власних кордонів і гідності.", 
+        answer: false, 
+        explanation: "Справедливий мир передбачає безпеку, відновлення справедливості та захист суверенітету держави." 
+      },
+      { 
+        text: "Волонтерство та допомога ЗСУ й постраждалим — це реальний внесок українців у наближення миру.", 
+        answer: true, 
+        explanation: "Кожна добра справа, донат та згуртованість наближають справедливий і довгоочікуваний мир." 
+      }
+    ];
+
+    /* 4 Match questions (4 points total) -> Total Max Score = 12 points */
+    const matchQuestions = [
+      { id: 'q1', text: 'Всесвітній символ миру, створений Пабло Пікассо', matchId: 'a1' },
+      { id: 'q2', text: 'Символ надії та пам\'яті про жертв ядерного бомбардування', matchId: 'a2' },
+      { id: 'q3', text: 'Традиційний ритуал ООН, що закликає до припинення вогню', matchId: 'a3' },
+      { id: 'q4', text: 'Головна передумова для виховання культури миру у школі', matchId: 'a4' },
+    ];
+
+    const matchAnswers = [
+      { id: 'a4', text: 'Взаємоповага та протидія булінгу' },
+      { id: 'a1', text: 'Білий голуб із оливковою гілкою' },
+      { id: 'a3', text: 'Удар у Дзвін Миру' },
+      { id: 'a2', text: '1000 паперових журавликів' },
+    ];
+
+    /* Audio Generator using Web Audio API */
+    const playAudioCue = (type, soundEnabled = true) => {
+      if (!soundEnabled) return;
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        if (type === 'correct') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.1);
+          osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.25);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+          osc.start(now);
+          osc.stop(now + 0.4);
+        } else if (type === 'wrong') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.exponentialRampToValueAtTime(146.83, now + 0.2);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'click') {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'victory') {
+          const notes = [523.25, 659.25, 783.99, 1046.50];
+          notes.forEach((freq, idx) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+            gain.gain.setValueAtTime(0.25, now + idx * 0.12);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.3);
+            osc.start(now + idx * 0.12);
+            osc.stop(now + idx * 0.12 + 0.35);
+          });
+        }
+      } catch (e) {
+        console.warn("Audio Context error", e);
+      }
+    };
+
+    const ConfettiEffect = () => (
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
+        {[...Array(80)].map((_, i) => {
+          const colors = ['#0284c7', '#38bdf8', '#f59e0b', '#10b981', '#6366f1', '#ec4899'];
+          const randomColor = colors[i % colors.length];
+          const randomLeft = Math.random() * 100;
+          const randomDelay = Math.random() * 0.6;
+          const randomDuration = 1.8 + Math.random() * 1.5;
+          const size = 8 + Math.random() * 8;
+          
+          return (
+            <div 
+              key={i}
+              className="absolute rounded-sm animate-confetti"
+              style={{
+                backgroundColor: randomColor,
+                left: `${randomLeft}%`,
+                top: `-20px`,
+                width: `${size}px`,
+                height: `${size * 1.2}px`,
+                animationDelay: `${randomDelay}s`,
+                animationDuration: `${randomDuration}s`
+              }}
+            />
+          );
+        })}
+      </div>
+    );
+
+    const TitleBadge = ({ text, color = "bg-sky-600", textColor = "text-white", subtitle }) => (
+      <div className="flex flex-col items-center mb-2 text-center">
+        <div className={`${color} ${textColor} text-xl md:text-3xl font-black py-2 px-6 rounded-2xl shadow-lg border-2 border-white transform -rotate-1`}>
+          {text}
+        </div>
+        {subtitle && (
+          <p className="mt-2 text-slate-700 font-bold text-sm md:text-lg max-w-4xl leading-tight">
+            {subtitle}
+          </p>
+        )}
+      </div>
+    );
+
+    function App() {
+      const totalSlides = 11;
+      const maxScore = 12;
+
+      const [currentSlide, setCurrentSlide] = useState(0);
+      const [userName, setUserName] = useState('');
+      const [score, setScore] = useState(0);
+      const [soundEnabled, setSoundEnabled] = useState(true);
+      const [showConfetti, setShowConfetti] = useState(false);
+
+      // Mini-game states
+      const [tfAnswers, setTfAnswers] = useState({});
+      const [selectedMatchQ, setSelectedMatchQ] = useState(null);
+      const [matchedPairs, setMatchedPairs] = useState({});
+
+      // Peace Actions Simulator
+      const [peaceTasks, setPeaceTasks] = useState([
+        { id: 't1', title: 'Підтримка волонтерської ініціативи для допомоги ЗСУ', category: null, correctCat: 'A' },
+        { id: 't2', title: 'Конструктивне розв\'язання суперечки в класному чаті без образ', category: null, correctCat: 'B' },
+        { id: 't3', title: 'Створення цифрового плакату про цінність безпечного та мирного неба', category: null, correctCat: 'C' },
+        { id: 't4', title: 'Поширення фейків та розпалювання ворожнечі у соцмережах', category: null, correctCat: 'D' },
+      ]);
+
+      const nextSlide = () => {
+        if (currentSlide < totalSlides) {
+          playAudioCue('click', soundEnabled);
+          setCurrentSlide(prev => prev + 1);
+          setShowConfetti(false);
+        }
+      };
+
+      const prevSlide = () => {
+        if (currentSlide > 0) {
+          playAudioCue('click', soundEnabled);
+          setCurrentSlide(prev => prev - 1);
+          setShowConfetti(false);
+        }
+      };
+
+      const handleTfAnswer = (index, userChoice) => {
+        if (tfAnswers[index] !== undefined) return;
+        const isCorrect = userChoice === trueFalseQuestions[index].answer;
+        
+        setTfAnswers(prev => ({ ...prev, [index]: userChoice }));
+        if (isCorrect) {
+          setScore(prev => prev + 1);
+          playAudioCue('correct', soundEnabled);
+        } else {
+          playAudioCue('wrong', soundEnabled);
+        }
+      };
+
+      const handleMatchSelect = (type, id) => {
+        if (type === 'q') {
+          if (matchedPairs[id]) return;
+          playAudioCue('click', soundEnabled);
+          setSelectedMatchQ(id === selectedMatchQ ? null : id);
+        } else if (type === 'a' && selectedMatchQ) {
+          if (Object.values(matchedPairs).includes(id)) return;
+
+          const qObj = matchQuestions.find(q => q.id === selectedMatchQ);
+          if (qObj.matchId === id) {
+            setMatchedPairs(prev => ({ ...prev, [selectedMatchQ]: id }));
+            setScore(prev => prev + 1);
+            setSelectedMatchQ(null);
+            playAudioCue('correct', soundEnabled);
+          } else {
+            setSelectedMatchQ(null);
+            playAudioCue('wrong', soundEnabled);
+          }
+        }
+      };
+
+      const triggerCelebration = () => {
+        setShowConfetti(true);
+        playAudioCue('victory', soundEnabled);
+      };
+
+      const placePeaceTask = (taskId, targetCat) => {
+        setPeaceTasks(prev => prev.map(t => {
+          if (t.id === taskId) {
+            const isRight = t.correctCat === targetCat;
+            if (isRight && t.category !== targetCat) playAudioCue('correct', soundEnabled);
+            return { ...t, category: targetCat };
+          }
+          return t;
+        }));
+      };
+
+      const renderSlideContent = () => {
+        switch (currentSlide) {
+          case 0:
+            return (
+              <div className="text-center relative py-2 flex flex-col items-center w-full max-w-6xl mx-auto">
+                <div className="flex gap-4 mb-3">
+                  <span className="p-3 bg-sky-100 text-sky-600 rounded-2xl animate-bounce shadow-md">
+                    <i className="fa-solid fa-dove text-3xl"></i>
+                  </span>
+                  <span className="p-3 bg-amber-100 text-amber-600 rounded-2xl animate-pulse shadow-md">
+                    <i className="fa-solid fa-bell text-3xl"></i>
+                  </span>
+                  <span className="p-3 bg-emerald-100 text-emerald-600 rounded-2xl animate-bounce shadow-md" style={{ animationDelay: '0.15s' }}>
+                    <i className="fa-solid fa-hand-holding-heart text-3xl"></i>
+                  </span>
+                </div>
+                
+                <h1 className="text-3xl md:text-5xl font-black text-slate-800 mb-3 tracking-tight leading-tight">
+                  Прагнення до Миру: <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-600 to-amber-500 inline-block">
+                    21 Вересня — День Миру в Україні
+                  </span>
+                </h1>
+                
+                <div className="bg-sky-600 text-white text-sm md:text-lg font-black py-2 px-6 rounded-full mb-4 shadow-lg border-2 border-white transform rotate-1">
+                  Інтерактивна виховна година 
+                </div>
+                
+                <div className="max-w-4xl w-full bg-white/90 backdrop-blur-md rounded-2xl p-5 shadow-xl border border-slate-200 text-left space-y-4">
+                  <p className="text-base md:text-xl text-slate-700 leading-relaxed font-semibold">
+                    Вітаємо на дистанційному уроці! Сьогодні ми дізнаємося історію та важливі символи Дня миру, обговоримо, чому мир — це не просто відсутність війни, а й щоденні вчинки, та візьмемо участь у дискусійних челенджах.
+                  </p>
+                  
+                  <div className="pt-3 border-t border-slate-200">
+                    <label className="block text-sm md:text-base font-extrabold text-slate-800 mb-2">
+                      <i className="fa-solid fa-user-pen text-sky-600 mr-2"></i>
+                      Введіть ім'я та прізвище учня/учениці для сертифіката:
+                    </label>
+                    <input 
+                      type="text" 
+                      value={userName}
+                      onChange={(e) => setUserName(e.target.value)}
+                      placeholder="Наприклад: Олексій Шевченко"
+                      className="w-full px-4 py-3 rounded-xl border-2 border-slate-300 focus:border-sky-500 focus:outline-none text-slate-800 font-bold text-base md:text-xl shadow-inner"
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 1:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Історія Дня миру: Від ідеї ООН до України" 
+                  color="bg-sky-600" 
+                  textColor="text-white" 
+                  subtitle="Як міжнародна ініціатива набула особливого значення для кожного українця"
+                />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-4 shadow-lg border-2 border-sky-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-sky-600 font-black text-xl">
+                        <i className="fa-solid fa-earth-americas text-2xl"></i>
+                        1981 / 2001: Ініціатива ООН
+                      </div>
+                      <p className="text-slate-700 text-sm md:text-base leading-relaxed mb-3 font-medium">
+                        У 1981 році Генеральна Асамблея ООН заснувала Міжнародний день миру. З 2002 року цей день офіційно відзначається <strong>21 вересня</strong> як день загального припинення вогню та ненасильства.
+                      </p>
+                      <div className="bg-sky-50 p-3 rounded-xl border border-sky-200 text-xs md:text-sm text-sky-950 font-bold">
+                        🔔 Символ: "Дзвін Миру" в Нью-Йорку, відлитий із монет, зібраних дітьми з 60 країн!
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 shadow-lg border-2 border-amber-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 text-amber-600 font-black text-xl">
+                        <i className="fa-solid fa-flag text-2xl"></i>
+                        2002: День миру в Україні
+                      </div>
+                      <p className="text-slate-700 text-sm md:text-base leading-relaxed mb-3 font-medium">
+                        Указ Президента України встановлює 21 вересня Днем миру в Україні. Для нашої країни цей день є нагадуванням про цінність суверенітету, свободи та безпеки.
+                      </p>
+                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-200 text-xs md:text-sm text-amber-950 font-bold">
+                        🇺🇦 Сьогодні для України мир означає перемогу України та безпеку для кожної родини!
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-emerald-50 rounded-2xl p-4 border-2 border-emerald-300 text-slate-800">
+                  <h4 className="font-black text-base md:text-lg mb-1 flex items-center gap-2 text-emerald-950">
+                    <i className="fa-solid fa-comment-dots text-emerald-600 text-xl"></i>
+                    Питання для роздумів:
+                  </h4>
+                  <p className="text-sm md:text-base text-slate-800 leading-snug font-semibold">
+                    Чому для сучасної України слово «Мир» має набагато глибший і чутливіший зміст, ніж просто відсутність бойових дій?
+                  </p>
+                </div>
+              </div>
+            );
+
+          case 2:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Символи Миру: Голуб та Журавлик" 
+                  color="bg-teal-600" 
+                  textColor="text-white"
+                  subtitle="Великі історії, що надихають людство вірити у краще майбутнє"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-5 shadow-xl border-2 border-teal-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-12 h-12 rounded-2xl bg-sky-100 text-sky-600 flex items-center justify-center font-black text-2xl">
+                          <i className="fa-solid fa-dove"></i>
+                        </div>
+                        <div>
+                          <h3 className="font-black text-lg text-slate-800">Голуб Пабло Пікассо</h3>
+                          <p className="text-xs text-slate-500 font-bold">Париж, 1949 рік</p>
+                        </div>
+                      </div>
+                      <p className="text-slate-700 text-xs md:text-sm leading-relaxed mb-3 font-medium">
+                        Білий голуб із оливковою гілкою в дзьобі став емблемою Всесвітнього конгресу миру. Малюнок Пікассо став усесвітнім символом чистоти та прагнення до спокою.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 shadow-xl border-2 border-rose-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center font-black text-2xl">
+                          <i className="fa-solid fa-paper-plane"></i>
+                        </div>
+                        <div>
+                          <h3 className="font-black text-lg text-slate-800">1000 Журавликів Садако</h3>
+                          <p className="text-xs text-slate-500 font-bold">Хіросіма, Японія</p>
+                        </div>
+                      </div>
+                      <p className="text-slate-700 text-xs md:text-sm leading-relaxed mb-3 font-medium">
+                        Дівчинка Садако Сасакі вірила: якщо скласти 1000 паперових журавликів (орігамі), мрія про одужання та мир здійсниться. Паперовий журавлик став символом надії та антивоєнного руху.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 bg-sky-50 rounded-2xl p-4 border border-sky-200 text-sky-950 text-xs md:text-base font-bold">
+                  ❓ <strong>Дискусія в класі:</strong> Які сучасні символи українського миру та незламності ви знаєте (наприклад, соняшник, бавовна, синьо-жовта стрічка)?
+                </div>
+              </div>
+            );
+
+          case 3:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Челендж 1: «Мир починається з мене»" 
+                  color="bg-indigo-600" 
+                  textColor="text-white"
+                  subtitle="Як культура у спілкуванні впливає на мир у школі та класному колективі"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-white p-5 rounded-2xl shadow-lg border-2 border-indigo-100 flex flex-col justify-between hover:border-indigo-400 transition-all">
+                    <div>
+                      <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center text-2xl mb-3 shadow-sm">
+                        <i className="fa-solid fa-comments"></i>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-lg mb-2">1. Мова без агресії</h4>
+                      <p className="text-slate-700 text-xs md:text-sm leading-relaxed font-medium">
+                        Відмова від мови ненависті, кібербулінгу та образ у месенджерах. Уміння критикувати дію, а не людину.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-lg border-2 border-indigo-100 flex flex-col justify-between hover:border-indigo-400 transition-all">
+                    <div>
+                      <div className="w-12 h-12 bg-emerald-600 text-white rounded-xl flex items-center justify-center text-2xl mb-3 shadow-sm">
+                        <i className="fa-solid fa-ear-listen"></i>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-lg mb-2">2. Емпатія і слухання</h4>
+                      <p className="text-slate-700 text-xs md:text-sm leading-relaxed font-medium">
+                        Здатність поставити себе на місце однокласника або однокласниці, зрозуміти їхні переживання під час війни.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl shadow-lg border-2 border-indigo-100 flex flex-col justify-between hover:border-indigo-400 transition-all">
+                    <div>
+                      <div className="w-12 h-12 bg-amber-500 text-white rounded-xl flex items-center justify-center text-2xl mb-3 shadow-sm">
+                        <i className="fa-solid fa-handshake-angle"></i>
+                      </div>
+                      <h4 className="font-black text-slate-900 text-lg mb-2">3. Підтримка та допомога</h4>
+                      <p className="text-slate-700 text-xs md:text-sm leading-relaxed font-medium">
+                        Вчасно підставити плече тому, хто має труднощі в навчанні або почувається самотнім у дистанційному форматі.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-5 bg-white p-4 rounded-2xl shadow-sm border-l-4 border-indigo-500 text-xs md:text-base font-bold text-slate-800">
+                  💬 <strong>Запитання для обговорення:</strong> Що найважче під час конфлікту у класному чаті: промовчати, вибачитися чи знайти компроміс?
+                </div>
+              </div>
+            );
+
+          case 4:
+            return (
+              <div className="w-full max-w-7xl mx-auto">
+                <TitleBadge 
+                  text="Інтерактивний Симулятор: «Класифікація Вчинків»" 
+                  color="bg-sky-600" 
+                  textColor="text-white"
+                  subtitle="Розподіліть вчинки підлітка за їхнім впливом на мир та згуртованість"
+                />
+
+                <div className="bg-white rounded-2xl p-4 shadow-xl border-2 border-sky-200">
+                  <div className="mb-3">
+                    <h4 className="text-xs font-black text-slate-500 uppercase tracking-wider mb-2">Натисніть на категорію, щоб класифікувати ситуацію:</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                      {peaceTasks.map(t => (
+                        <div key={t.id} className={`p-2.5 rounded-xl border text-xs font-bold flex justify-between items-center ${
+                          t.category ? 'bg-sky-50 border-sky-300 text-sky-900' : 'bg-slate-50 border-slate-300 text-slate-800'
+                        }`}>
+                          <span className="mr-1 leading-tight">{t.title}</span>
+                          <div className="flex gap-1 shrink-0">
+                            {['A', 'B', 'C', 'D'].map(cat => (
+                              <button
+                                key={cat}
+                                onClick={() => placePeaceTask(t.id, cat)}
+                                className={`w-6 h-6 rounded-lg font-black text-xs cursor-pointer ${
+                                  t.category === cat ? 'bg-sky-600 text-white shadow-sm' : 'bg-slate-200 text-slate-700 hover:bg-sky-300'
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+                    <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl min-h-[90px]">
+                      <h5 className="font-black text-emerald-900 text-sm mb-0.5">Категорія А: Волонтерство</h5>
+                      <p className="text-[11px] text-emerald-700 font-bold mb-2">Допомога армії та постраждалим</p>
+                      {peaceTasks.filter(t => t.category === 'A').map(t => (
+                        <div key={t.id} className="p-2 bg-white rounded-lg shadow-sm border border-emerald-200 mb-1 font-bold text-emerald-950 text-xs">
+                          {t.title}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-3 bg-sky-50 border border-sky-300 rounded-xl min-h-[90px]">
+                      <h5 className="font-black text-sky-900 text-sm mb-0.5">Категорія B: Безконфліктність</h5>
+                      <p className="text-[11px] text-sky-700 font-bold mb-2">Культура спілкування в класі</p>
+                      {peaceTasks.filter(t => t.category === 'B').map(t => (
+                        <div key={t.id} className="p-2 bg-white rounded-lg shadow-sm border border-sky-200 mb-1 font-bold text-sky-950 text-xs">
+                          {t.title}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-3 bg-amber-50 border border-amber-300 rounded-xl min-h-[90px]">
+                      <h5 className="font-black text-amber-900 text-sm mb-0.5">Категорія C: Інформаційний мир</h5>
+                      <p className="text-[11px] text-amber-700 font-bold mb-2">Творчість, просвіта та медіаграмотність</p>
+                      {peaceTasks.filter(t => t.category === 'C').map(t => (
+                        <div key={t.id} className="p-2 bg-white rounded-lg shadow-sm border border-amber-200 mb-1 font-bold text-amber-950 text-xs">
+                          {t.title}
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl min-h-[90px]">
+                      <h5 className="font-black text-rose-900 text-sm mb-0.5">Категорія D: Шкідливі дії</h5>
+                      <p className="text-[11px] text-rose-700 font-bold mb-2">Руйнування миру та фейки</p>
+                      {peaceTasks.filter(t => t.category === 'D').map(t => (
+                        <div key={t.id} className="p-2 bg-white rounded-lg shadow-sm border border-rose-200 mb-1 font-bold text-rose-950 text-xs">
+                          {t.title}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 5:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Челендж 2: «Інформаційна гігієна як захист миру»" 
+                  color="bg-amber-500" 
+                  textColor="text-white"
+                  subtitle="Ворожі фейки та дезінформація — інструмент руйнування миру зсередини"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-amber-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3 text-amber-600 font-black text-2xl">
+                        <i className="fa-solid fa-shield-halved text-3xl"></i>
+                        3 правила медіаграмотності
+                      </div>
+                      <p className="text-slate-700 text-sm md:text-base leading-relaxed mb-4 font-medium">
+                        1. Перевіряй джерело (офіційні канали ЗСУ та держави).<br/>
+                        2. Не поширюй емоційні заклики без перевірки.<br/>
+                        3. Не знімай та не викладай роботу ППО та наслідки прильотів.
+                      </p>
+                      <div className="bg-amber-50 p-3 rounded-xl border border-amber-300 text-xs md:text-sm text-amber-950 font-bold">
+                        🛡️ Інформаційна тиша наближає мир та береже життя воїнів!
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-sky-200 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center gap-2 mb-3 text-sky-600 font-black text-2xl">
+                        <i className="fa-solid fa-brain text-3xl"></i>
+                        Критичне мислення
+                      </div>
+                      <p className="text-slate-700 text-sm md:text-base leading-relaxed mb-4 font-medium">
+                        Запитайте себе перед репостом:<br/>
+                        — Кому вигідно, щоб я злякався або розгнівався?<br/>
+                        — Чи є це першоджерелом, чи звичайним панічним чутом?
+                      </p>
+                      <div className="bg-sky-50 p-3 rounded-xl border border-sky-300 text-xs md:text-sm text-sky-950 font-bold">
+                        💡 Спокійний розум — це наш особистий щит!
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 6:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Челендж 3: «Дерево Дяки та Надії»" 
+                  color="bg-emerald-600" 
+                  textColor="text-white"
+                  subtitle="Кому ми дякуємо за можливість навчатися та жити під мирним прапором?"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-emerald-200">
+                    <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-3xl font-black mb-3 shadow-sm">
+                      <i className="fa-solid fa-heart"></i>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-2">Слова вдячності ЗСУ</h3>
+                    <p className="text-slate-700 text-sm md:text-base leading-relaxed font-medium">
+                      Завдяки мужності наших захисників і захисниць ми можемо вчитися, мріяти та будувати майбутнє України. Кожен урок — це наша відповідь ворогу!
+                    </p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-blue-200">
+                    <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center text-3xl font-black mb-3 shadow-sm">
+                      <i className="fa-solid fa-seedling"></i>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-2">Завдання на онлайн-дошці (Jamboard/Padlet)</h3>
+                    <p className="text-slate-700 text-sm md:text-base leading-relaxed font-medium">
+                      Напишіть на віртуальному стікері одне слово-побажання Україні після Перемоги та надішліть у загальний чат класу.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 7:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Психологічна стійкість: Мир усередині нас" 
+                  color="bg-teal-600" 
+                  textColor="text-white"
+                  subtitle="Як зберігати внутрішній спокій та підтримку у складні часи"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border-2 border-teal-200">
+                    <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-xl flex items-center justify-center text-2xl font-black mb-3 mx-auto">
+                      <i className="fa-solid fa-lungs"></i>
+                    </div>
+                    <h3 className="text-lg font-black text-center text-slate-800 mb-1">Техніка «Дихання за квадратом»</h3>
+                    <p className="text-slate-600 text-xs md:text-sm leading-relaxed mb-3">
+                      Вдих (4 сек) — Затримка (4 сек) — Видих (4 сек) — Затримка (4 сек). Допомагає повернути самоконтроль під час тривоги чи занепокоєння.
+                    </p>
+                    <div className="bg-teal-50 p-2.5 rounded-xl border border-teal-200 text-xs text-teal-900 font-semibold">
+                      🧘 Внутрішній мир розбудовує зовнішній спокій навколо нас!
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="bg-white p-3 rounded-xl shadow-md border-l-4 border-teal-500">
+                      <h4 className="font-bold text-slate-800 text-xs">Правило 1: Режим і турбота про себе</h4>
+                      <p className="text-slate-600 text-[11px] mt-0.5">
+                        Здоровий сон, прогулянки та спілкування з близькими дають сили жити й творити.
+                      </p>
+                    </div>
+
+                    <div className="bg-white p-3 rounded-xl shadow-md border-l-4 border-sky-500">
+                      <h4 className="font-bold text-slate-800 text-xs">Правило 2: Підтримка друзів</h4>
+                      <p className="text-slate-600 text-[11px] mt-0.5">
+                        Не соромтеся запитати однокласника: «Як ти почуваєшся? Чи потрібна моя допомога?»
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 8:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text="Практикум: «Лист Миру та Вдячності»" 
+                  color="bg-sky-600" 
+                  textColor="text-white"
+                  subtitle="Маленькі цифрові вчинки, що об'єднують усю країну"
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="bg-white p-4 rounded-2xl shadow-lg border-2 border-sky-100 flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 bg-sky-500 text-white rounded-xl flex items-center justify-center text-lg mb-2">
+                        <i className="fa-solid fa-pen-nib"></i>
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm mb-1">Лист захиснику</h4>
+                      <p className="text-slate-600 text-xs leading-relaxed">
+                        Написання короткого теплого листа чи малюнка для воїнів на фронт.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl shadow-lg border-2 border-sky-100 flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 bg-amber-500 text-white rounded-xl flex items-center justify-center text-lg mb-2">
+                        <i className="fa-solid fa-hand-holding-heart"></i>
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm mb-1">Благодійність</h4>
+                      <p className="text-slate-600 text-xs leading-relaxed">
+                        Участь у шкільному ярмарку або зборі макулатури/пластику на благодійні потреби.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white p-4 rounded-2xl shadow-lg border-2 border-sky-100 flex flex-col justify-between">
+                    <div>
+                      <div className="w-10 h-10 bg-emerald-500 text-white rounded-xl flex items-center justify-center text-lg mb-2">
+                        <i className="fa-solid fa-users text-lg"></i>
+                      </div>
+                      <h4 className="font-bold text-slate-800 text-sm mb-1">Єдність класу</h4>
+                      <p className="text-slate-600 text-xs leading-relaxed">
+                        Спільна онлайн-вікторина або створення фотоколажу «Мир очима 8-го класу».
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+
+          case 9:
+            return (
+              <div className="w-full max-w-7xl mx-auto">
+                <TitleBadge 
+                  text='Експрес-тест: "Так чи Ні?"' 
+                  color="bg-emerald-600" 
+                  textColor="text-white"
+                  subtitle="Дайте відповіді на 8 запитань за матеріалами уроку (Максимум: 8 балів)"
+                />
+
+                <div className="bg-white rounded-2xl p-4 shadow-xl border-2 border-emerald-200 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {trueFalseQuestions.map((q, idx) => {
+                    const isAnswered = tfAnswers[idx] !== undefined;
+                    const isCorrect = tfAnswers[idx] === q.answer;
+
+                    return (
+                      <div 
+                        key={idx} 
+                        className={`p-2.5 rounded-xl border transition-all flex flex-col justify-between ${
+                          isAnswered 
+                            ? (isCorrect ? 'bg-emerald-50 border-emerald-300' : 'bg-rose-50 border-rose-300') 
+                            : 'border-slate-200 hover:border-emerald-300 bg-slate-50'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center gap-2">
+                          <p className="font-bold text-slate-900 text-xs md:text-sm flex-1 leading-tight">
+                            {idx + 1}. {q.text}
+                          </p>
+                          <div className="flex gap-1.5 shrink-0">
+                            <button 
+                              disabled={isAnswered}
+                              onClick={() => handleTfAnswer(idx, true)}
+                              className={`px-3 py-1 rounded-lg font-black text-xs transition-all cursor-pointer ${
+                                isAnswered 
+                                  ? (tfAnswers[idx] === true ? 'bg-emerald-600 text-white' : 'bg-slate-200 text-slate-400') 
+                                  : 'bg-slate-200 text-slate-700 hover:bg-emerald-500 hover:text-white'
+                              }`}
+                            >
+                              ТАК
+                            </button>
+                            <button 
+                              disabled={isAnswered}
+                              onClick={() => handleTfAnswer(idx, false)}
+                              className={`px-3 py-1 rounded-lg font-black text-xs transition-all cursor-pointer ${
+                                isAnswered 
+                                  ? (tfAnswers[idx] === false ? 'bg-rose-600 text-white' : 'bg-slate-200 text-slate-400') 
+                                  : 'bg-slate-200 text-slate-700 hover:bg-rose-500 hover:text-white'
+                              }`}
+                            >
+                              НІ
+                            </button>
+                          </div>
+                        </div>
+
+                        {isAnswered && (
+                          <div className={`mt-1.5 text-[11px] p-1.5 rounded-lg font-medium leading-tight ${isCorrect ? 'bg-emerald-100 text-emerald-950' : 'bg-rose-100 text-rose-950'}`}>
+                            <strong>{isCorrect ? '✅ Вірно!' : '❌ Помилка.'}</strong> {q.explanation}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+
+          case 10:
+            return (
+              <div className="w-full max-w-6xl mx-auto">
+                <TitleBadge 
+                  text='Гра "Знайди пару"' 
+                  color="bg-indigo-600" 
+                  textColor="text-white"
+                  subtitle="Співставте опис або поняття з його назвою (4 бали)"
+                />
+
+                <div className="bg-white rounded-2xl p-5 shadow-xl border-2 border-indigo-200">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <h4 className="text-center font-black text-xs text-indigo-600 uppercase tracking-wider mb-1">
+                        Опис / Символ
+                      </h4>
+                      {matchQuestions.map((q) => {
+                        const isMatched = matchedPairs[q.id] !== undefined;
+                        const isSelected = selectedMatchQ === q.id;
+
+                        return (
+                          <button
+                            key={q.id}
+                            disabled={isMatched}
+                            onClick={() => handleMatchSelect('q', q.id)}
+                            className={`w-full text-left p-3 rounded-xl border-2 font-bold text-xs md:text-sm transition-all relative cursor-pointer ${
+                              isMatched 
+                                ? 'bg-emerald-50 border-emerald-400 text-emerald-900 opacity-80' 
+                                : isSelected 
+                                  ? 'bg-indigo-100 border-indigo-500 text-indigo-950 shadow-sm' 
+                                  : 'bg-slate-50 border-slate-200 text-slate-800 hover:border-indigo-300'
+                            }`}
+                          >
+                            {q.text}
+                            {isMatched && <i className="fa-solid fa-circle-check text-emerald-500 absolute right-3 top-1/2 transform -translate-y-1/2 text-base"></i>}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="space-y-2">
+                      <h4 className="text-center font-black text-xs text-indigo-600 uppercase tracking-wider mb-1">
+                        Назва / Значення
+                      </h4>
+                      {matchAnswers.map((a) => {
+                        const isMatched = Object.values(matchedPairs).includes(a.id);
+                        const isSelectable = selectedMatchQ !== null && !isMatched;
+
+                        return (
+                          <button
+                            key={a.id}
+                            disabled={!isSelectable && !isMatched}
+                            onClick={() => handleMatchSelect('a', a.id)}
+                            className={`w-full text-center p-3 rounded-xl border-2 font-black text-xs md:text-sm transition-all ${
+                              isMatched 
+                                ? 'bg-emerald-50 border-emerald-400 text-emerald-900 opacity-80 cursor-default' 
+                                : isSelectable 
+                                  ? 'bg-amber-100 border-amber-400 text-amber-950 hover:bg-amber-200 cursor-pointer animate-pulse' 
+                                  : 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+                            }`}
+                          >
+                            {a.text}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {Object.keys(matchedPairs).length === matchQuestions.length && (
+                    <div className="mt-4 bg-emerald-500 text-white text-center p-3 rounded-xl font-black text-base animate-bounce shadow-md">
+                      🎉 Чудово! Усі поняття успішно з'єднано! (+4 бали)
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+
+          case 11:
+            return (
+              <div className="w-full max-w-5xl mx-auto py-1">
+                {showConfetti && <ConfettiEffect />}
+
+                <div id="certificate-print-area" className="bg-white rounded-2xl p-5 md:p-8 shadow-xl border-4 border-sky-600 relative overflow-hidden text-center">
+                  
+                  <i className="fa-solid fa-dove text-sky-100 text-[16rem] absolute -right-12 -bottom-12 opacity-30 pointer-events-none"></i>
+
+                  <div className="flex justify-center items-center mb-2">
+                    <div className="flex items-center gap-2 text-sky-700 font-black text-xs md:text-sm uppercase tracking-widest">
+                      <i className="fa-solid fa-graduation-cap text-lg"></i> Навчально-виховний сертифікат • 8 Клас
+                    </div>
+                  </div>
+
+                  <h2 className="text-3xl md:text-5xl font-black text-slate-900 tracking-wider uppercase mb-1">
+                    Сертифікат Адепта Миру
+                  </h2>
+                  <p className="text-sky-700 font-extrabold text-xs md:text-base uppercase tracking-widest mb-4">
+                    З нагоди Міжнародного дня миру в Україні (21 Вересня)
+                  </p>
+
+                  <div className="my-3 py-4 border-y-2 border-sky-200 bg-sky-50/50 rounded-2xl">
+                    <p className="text-slate-600 text-xs md:text-sm font-bold mb-1">Цим засвідчується, що учень / учениця</p>
+                    <h3 className="text-2xl md:text-4xl font-black text-slate-900 underline decoration-sky-500 decoration-4 underline-offset-4">
+                      {userName.trim() ? userName : "Учень / Учениця 8 класу"}
+                    </h3>
+                    <p className="text-slate-700 text-xs md:text-base mt-2 font-semibold leading-relaxed max-w-3xl mx-auto">
+                      успішно проявив(ла) активність під час виховної години, опанував(ла) знання про історію та символи Дня миру, та бере участь у розбудові мирного майбутнього України!
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-4 my-3">
+                    <div className="bg-slate-900 text-white p-3 px-5 rounded-xl flex items-center gap-3 shadow-md">
+                      <i className="fa-solid fa-trophy text-amber-400 text-2xl"></i>
+                      <div className="text-left">
+                        <div className="text-[10px] text-slate-400 font-bold uppercase">Результат завдань</div>
+                        <div className="text-xl font-black text-amber-300">{score} з {maxScore} балів</div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-1.5 text-2xl">
+                      {[...Array(5)].map((_, i) => (
+                        <i 
+                          key={i} 
+                          className={`fa-solid fa-star ${i < Math.round((score / maxScore) * 5) ? 'text-amber-400' : 'text-slate-200'}`}
+                        ></i>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="bg-sky-50 border border-sky-200 rounded-2xl p-3 my-3 text-left space-y-1">
+                    <h4 className="font-black text-sky-950 text-xs md:text-sm flex items-center gap-2">
+                      <i className="fa-solid fa-face-smile text-sky-600 text-lg"></i>
+                      Підсумок та побажання:
+                    </h4>
+                    <p className="text-slate-800 text-xs md:text-sm leading-relaxed font-semibold">
+                      {score >= 10 
+                        ? "🎉 Чудовий результат! Ви добре знаєте історію свята, розумієте важливість згуртованості, інформаційної гігієни та робите свій внесок у наближення миру!"
+                        : score >= 6
+                          ? "👍 Хороша робота! Ви засвоїли головні поняття та символи Дня миру. Пам'ятайте, що мир починається з добра та підтримки навколо нас."
+                          : "📚 Дякуємо за участь! Перегляньте матеріали виховної години ще раз та долучайтеся до активностей у класі!"
+                      }
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap justify-center gap-3 mt-3 no-print">
+                    <button 
+                      onClick={triggerCelebration}
+                      className="bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700 text-white font-black text-sm px-6 py-2.5 rounded-full shadow-md flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-wand-magic-sparkles text-base"></i> Святковий салют!
+                    </button>
+
+                    <button 
+                      onClick={() => window.print()}
+                      className="bg-slate-800 hover:bg-slate-900 text-white font-black text-sm px-6 py-2.5 rounded-full shadow-md flex items-center gap-2 transition-transform active:scale-95 cursor-pointer"
+                    >
+                      <i className="fa-solid fa-print text-base"></i> Друк сертифіката
+                    </button>
+                  </div>
+
+                </div>
+              </div>
+            );
+
+          default:
+            return null;
+        }
+      };
+
+      return (
+        <div className="h-screen w-full bg-gradient-to-br from-slate-100 via-slate-50 to-sky-50 text-slate-800 flex flex-col justify-between overflow-hidden">
+          
+          {/* Header */}
+          <header className="w-full bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-2.5 flex justify-between items-center sticky top-0 z-40 shadow-sm no-print">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-sky-600 text-white rounded-xl flex items-center justify-center font-black text-lg shadow-sm">
+                М
+              </div>
+              <div>
+                <h1 className="font-black text-sm md:text-base text-slate-800 leading-tight">
+                  День миру в Україні • 21 вересня
+                </h1>
+                <p className="text-[11px] text-slate-500 font-bold">Інтерактивна виховна година</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={() => setSoundEnabled(!soundEnabled)}
+                className={`w-9 h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer text-base ${
+                  soundEnabled ? 'bg-sky-100 border-sky-300 text-sky-800' : 'bg-slate-100 border-slate-300 text-slate-400'
+                }`}
+                title={soundEnabled ? "Вимкнути звук" : "Увімкнути звук"}
+              >
+                <i className={`fa-solid ${soundEnabled ? 'fa-volume-high' : 'fa-volume-xmark'}`}></i>
+              </button>
+
+              <div className="bg-sky-400/20 border border-sky-500 px-3 py-1 rounded-xl flex items-center gap-1.5 font-black text-sm text-slate-800 shadow-sm">
+                <i className="fa-solid fa-star text-amber-500"></i>
+                <span>{score}/{maxScore}</span>
+              </div>
+            </div>
+          </header>
+
+          {/* Main Slide Body */}
+          <main className="flex-1 flex items-center justify-center p-3 md:p-4 overflow-hidden">
+            {renderSlideContent()}
+          </main>
+
+          {/* Navigation Bar */}
+          <footer className="w-full bg-white/90 backdrop-blur border-t border-slate-200 px-4 py-2.5 flex items-center justify-between z-40 shadow-sm no-print">
+            <button 
+              onClick={prevSlide}
+              disabled={currentSlide === 0}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-xs md:text-sm transition-all cursor-pointer ${
+                currentSlide === 0 
+                  ? 'text-slate-300 cursor-not-allowed' 
+                  : 'text-slate-700 bg-slate-100 hover:bg-sky-600 hover:text-white shadow-sm'
+              }`}
+            >
+              <i className="fa-solid fa-chevron-left"></i> Назад
+            </button>
+
+            {/* Slide Pagination Dots */}
+            <div className="flex items-center gap-1.5">
+              {[...Array(totalSlides + 1)].map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    playAudioCue('click', soundEnabled);
+                    setCurrentSlide(i);
+                  }}
+                  className={`h-2.5 rounded-full transition-all cursor-pointer ${
+                    currentSlide === i 
+                      ? 'w-8 bg-sky-600' 
+                      : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                  }`}
+                  title={`Слайд ${i + 1}`}
+                />
+              ))}
+            </div>
+
+            <button 
+              onClick={nextSlide}
+              disabled={currentSlide === totalSlides}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full font-black text-xs md:text-sm transition-all cursor-pointer ${
+                currentSlide === totalSlides 
+                  ? 'text-slate-300 cursor-not-allowed' 
+                  : 'text-white bg-sky-600 hover:bg-sky-700 shadow-md'
+              }`}
+            >
+              Далі <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </footer>
+
+        </div>
+      );
+    }
+
+    const rootElement = document.getElementById('root');
+    const root = ReactDOM.createRoot(rootElement);
+    root.render(<App />);
+  </script>
+</body>
+</html>
